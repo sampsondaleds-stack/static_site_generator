@@ -3,19 +3,23 @@ import shutil
 from block import markdown_to_html_node
 from extractmarkdown import extract_title
 from pathlib import Path
+import sys
 
 
 def main():
+    basepath = "/"
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
     source = "static"
-    destination = "public"
+    destination = "docs"
     from_path = "content"
     template_path = "template.html"
-    dest_path = "public"
+    dest_path = "docs"
     if os.path.exists(destination):
         shutil.rmtree(destination)
         print("deleting destination folder")
     copy_contents(source, destination)
-    generate_pages_recursive(from_path, template_path, dest_path)
+    generate_pages_recursive(from_path, template_path, dest_path, basepath)
 
        
 def copy_contents(source, destination):
@@ -30,7 +34,7 @@ def copy_contents(source, destination):
         else:
             copy_contents(os.path.join(source, file), os.path.join(destination, file))
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     directories = os.listdir(dir_path_content)
     for file in directories:
         from_path = os.path.join(dir_path_content, file)
@@ -40,16 +44,18 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
             generate_page(
                 from_path, 
                 template_path, 
-                dest_path
+                dest_path,
+                basepath
                 )
         else:
             generate_pages_recursive(
                 from_path, 
                 template_path, 
-                dest_path
+                dest_path,
+                basepath
             )
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
     #save the contents of the markdown file
     with open(from_path, "r") as file:
@@ -63,6 +69,8 @@ def generate_page(from_path, template_path, dest_path):
     #update the template with the content extracted above
     template = template.replace("{{ Title }}", title)
     template = template.replace("{{ Content }}", html_string)
+    template = template.replace('href="/', f'href="{basepath}')
+    template = template.replace('src="/', f'src="{basepath}')
     #create the destination directories if they don't already exist
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     #write the updated template to the destination file
